@@ -283,11 +283,10 @@ def stock_data():
     symbol_uk = request.args.get(
         "symbol_uk", default="AZN.L", type=str
     )  # UK stock symbol
-    api_key = "YOUR_API_KEY_HERE"  # Replace with your Alpha Vantage API key
 
     # Fetch data for both stocks
-    data_us = fetch_stock_data(symbol_us, api_key)
-    data_uk = fetch_stock_data(symbol_uk, api_key)
+    data_us = fetch_stock_data(symbol_us, API_KEY)
+    data_uk = fetch_stock_data(symbol_uk, API_KEY)
 
     if data_us and data_uk:
         print(f"US stock data: {data_us}")

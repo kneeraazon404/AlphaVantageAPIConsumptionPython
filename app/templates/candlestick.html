@@ -9,12 +9,11 @@ chart %}active{% endblock %} {% block content %}
     <option value="GOOG">GOOG</option>
     <!-- Add more symbols as needed -->
   </select>
-  <!-- Color Picker for Bullish and Bearish Colors -->
   <div>
-    <label for="bullishColor">Bullish Color:</label>
+    <label for="bullishColor">Upward candle Color:</label>
     <input type="color" id="bullishColor" name="bullishColor" value="#3C90EB" />
     <!-- Default blue -->
-    <label for="bearishColor">Bearish Color:</label>
+    <label for="bearishColor">Downward candle Color:</label>
     <input type="color" id="bearishColor" name="bearishColor" value="#DF7D46" />
     <!-- Default orange -->
   </div>
@@ -128,6 +127,36 @@ chart %}active{% endblock %} {% block content %}
         .catch((error) => console.error("Error fetching data:", error));
     }
 
+    function fetchAndUpdateComparisonChart(symbol1, symbol2) {
+      fetch(`/stock-data?symbol_us=${symbol1}&symbol_uk=${symbol2}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            console.error("Error fetching data:", data.error);
+            return;
+          }
+
+          // Process US stock data
+          const usSeriesData = data.us_stock.dates.map((date, index) => ({
+            x: new Date(date).getTime(),
+            y: parseFloat(data.us_stock.prices[index]),
+          }));
+
+          // Process UK stock data
+          const ukSeriesData = data.uk_stock.dates.map((date, index) => ({
+            x: new Date(date).getTime(),
+            y: parseFloat(data.uk_stock.prices[index]),
+          }));
+
+          // Update the comparison chart with US and UK series data
+          comparisonChart.updateSeries([
+            { name: `${symbol1} Close Price`, data: usSeriesData },
+            { name: `${symbol2} Close Price`, data: ukSeriesData },
+          ]);
+        })
+        .catch((error) => console.error("Error in API call:", error));
+    }
+
     document
       .getElementById("symbolSelector")
       .addEventListener("change", function () {
@@ -135,6 +164,7 @@ chart %}active{% endblock %} {% block content %}
       });
 
     fetchDataAndUpdateChart(document.getElementById("symbolSelector").value);
+    fetchAndUpdateComparisonChart("IBM", "MSFT");
   });
 </script>
 {% endblock %}

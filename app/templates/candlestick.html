@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}Stock Charts{% endblock %} {% block
-chart %}active{% endblock %}{% block content %}
+chart %}active{% endblock %} {% block content %}
 <div class="container">
   <h1>Stock Charts</h1>
   <label for="symbolSelector">Select Symbol:</label>
@@ -9,9 +9,20 @@ chart %}active{% endblock %}{% block content %}
     <option value="GOOG">GOOG</option>
     <!-- Add more symbols as needed -->
   </select>
+  <!-- Color Picker for Bullish and Bearish Colors -->
+  <div>
+    <label for="bullishColor">Bullish Color:</label>
+    <input type="color" id="bullishColor" name="bullishColor" value="#3C90EB" />
+    <!-- Default blue -->
+    <label for="bearishColor">Bearish Color:</label>
+    <input type="color" id="bearishColor" name="bearishColor" value="#DF7D46" />
+    <!-- Default orange -->
+  </div>
   <div id="candlestickChart" class="chart-container"></div>
   <div id="lineChart" class="chart-container"></div>
   <div id="scatterChart" class="chart-container"></div>
+  <div id="comparisonChart" class="chart-container"></div>
+  <!-- Added div for comparison chart -->
 </div>
 {% endblock %} {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -20,34 +31,13 @@ chart %}active{% endblock %}{% block content %}
     var candlestickChart = new ApexCharts(
       document.querySelector("#candlestickChart"),
       {
-        chart: {
-          type: "candlestick",
-          height: 350,
-        },
-        series: [
-          {
-            data: [],
-          },
-        ],
-        title: {
-          text: "Stock Candlestick Chart",
-          align: "left",
-        },
-        xaxis: {
-          type: "datetime",
-        },
-        yaxis: {
-          tooltip: {
-            enabled: true,
-          },
-        },
+        chart: { type: "candlestick", height: 350 },
+        series: [{ data: [] }],
+        title: { text: "Stock Candlestick Chart", align: "left" },
+        xaxis: { type: "datetime" },
+        yaxis: { tooltip: { enabled: true } },
         plotOptions: {
-          candlestick: {
-            colors: {
-              upward: "#3C90EB", // Color for upward movement (bullish)
-              downward: "#DF7D46", // Color for downward movement (bearish)
-            },
-          },
+          candlestick: { colors: { upward: "#3C90EB", downward: "#DF7D46" } },
         },
       }
     );
@@ -66,9 +56,49 @@ chart %}active{% endblock %}{% block content %}
       xaxis: { type: "datetime" },
     });
 
+    var comparisonChart = new ApexCharts(
+      document.querySelector("#comparisonChart"),
+      {
+        chart: { type: "line", height: 350 },
+        series: [
+          { name: "US Stock Close Price", data: [] },
+          { name: "UK Stock Close Price", data: [] },
+        ],
+        title: { text: "US vs UK Stock Comparison", align: "left" },
+        xaxis: { type: "datetime" },
+        yaxis: { title: { text: "Close Price" } },
+      }
+    );
+
     candlestickChart.render();
     lineChart.render();
     scatterChart.render();
+    comparisonChart.render();
+
+    // Function to update the candlestick chart's colors based on user selection
+    function updateCandlestickChartColors() {
+      var bullishColor = document.getElementById("bullishColor").value; // Get the bullish color value
+      var bearishColor = document.getElementById("bearishColor").value; // Get the bearish color value
+
+      candlestickChart.updateOptions({
+        plotOptions: {
+          candlestick: {
+            colors: {
+              upward: bullishColor, // Set the bullish (upward) color
+              downward: bearishColor, // Set the bearish (downward) color
+            },
+          },
+        },
+      });
+    }
+
+    // Add event listeners for the color picker inputs
+    document
+      .getElementById("bullishColor")
+      .addEventListener("change", updateCandlestickChartColors);
+    document
+      .getElementById("bearishColor")
+      .addEventListener("change", updateCandlestickChartColors);
 
     function fetchDataAndUpdateChart(symbol) {
       fetch(`/candlestick?symbol=${symbol}`)

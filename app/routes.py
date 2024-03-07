@@ -248,31 +248,54 @@ def candlestick():
             for date, daily_values in daily_data.items()
         ]
 
-        #  stacked bar chart data
-        stacked_bar_data = [
-            {
-                "t": date,
-                "o": float(daily_values["1. open"]),
-                "h": float(daily_values["2. high"]),
-                "l": float(daily_values["3. low"]),
-                "c": float(daily_values["4. close"]),
-            }
-            for date, daily_values in daily_data.items()
-        ]
-        print(stacked_bar_data)
-
         # Package both data formats into a single response
         formatted_data = {
             "candlestick": candlestick_data,
             "line": line_chart_data,
             "scatter": scatter_data,
-            "stacked_bar": stacked_bar_data,
         }
         # print(formatted_data)
 
         return jsonify(formatted_data)
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "An error occurred while fetching data"}), 500
+
+
+def fetch_stock_data(symbol, api_key):
+    """Fetch daily stock data from Alpha Vantage."""
+    api_url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={api_key}"
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        data = response.json().get("Time Series (Daily)", {})
+        # Extract dates and closing prices
+        dates = list(data.keys())
+        closing_prices = [data[date]["4. close"] for date in dates]
+        return {"dates": dates, "prices": closing_prices}
+    else:
+        return None
+
+
+@app.route("/stock-data")
+def stock_data():
+    symbol_us = request.args.get(
+        "symbol_us", default="AAPL", type=str
+    )  # US stock symbol
+    symbol_uk = request.args.get(
+        "symbol_uk", default="AZN.L", type=str
+    )  # UK stock symbol
+    api_key = "YOUR_API_KEY_HERE"  # Replace with your Alpha Vantage API key
+
+    # Fetch data for both stocks
+    data_us = fetch_stock_data(symbol_us, api_key)
+    data_uk = fetch_stock_data(symbol_uk, api_key)
+
+    if data_us and data_uk:
+        print(f"US stock data: {data_us}")
+        print(f"UK stock data: {data_uk}")
+        # Return both datasets
+        return jsonify({"us_stock": data_us, "uk_stock": data_uk})
+    else:
+        return jsonify({"error": "Failed to fetch stock data"}), 500
 
 
 @app.route("/chart")

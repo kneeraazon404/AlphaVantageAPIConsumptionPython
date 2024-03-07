@@ -1,0 +1,110 @@
+{% extends "base.html" %} {% block title %}Stock Charts{% endblock %} {% block
+chart %}active{% endblock %}{% block content %}
+<div class="container">
+  <h1>Stock Charts</h1>
+  <label for="symbolSelector">Select Symbol:</label>
+  <select id="symbolSelector">
+    <option value="IBM">IBM</option>
+    <option value="MSFT">MSFT</option>
+    <option value="GOOG">GOOG</option>
+    <!-- Add more symbols as needed -->
+  </select>
+  <div id="candlestickChart" class="chart-container"></div>
+  <div id="lineChart" class="chart-container"></div>
+  <div id="scatterChart" class="chart-container"></div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var candlestickChart = new ApexCharts(
+      document.querySelector("#candlestickChart"),
+      {
+        chart: {
+          type: "candlestick",
+          height: 350,
+        },
+        series: [
+          {
+            data: [],
+          },
+        ],
+        title: {
+          text: "Stock Candlestick Chart",
+          align: "left",
+        },
+        xaxis: {
+          type: "datetime",
+        },
+        yaxis: {
+          tooltip: {
+            enabled: true,
+          },
+        },
+        plotOptions: {
+          candlestick: {
+            colors: {
+              upward: "#3C90EB", // Color for upward movement (bullish)
+              downward: "#DF7D46", // Color for downward movement (bearish)
+            },
+          },
+        },
+      }
+    );
+
+    var lineChart = new ApexCharts(document.querySelector("#lineChart"), {
+      chart: { type: "line", height: 350 },
+      series: [{ name: "Close Price", data: [] }],
+      title: { text: "Stock Line Chart", align: "left" },
+      xaxis: { type: "datetime" },
+    });
+
+    var scatterChart = new ApexCharts(document.querySelector("#scatterChart"), {
+      chart: { type: "scatter", height: 350 },
+      series: [{ name: "Price Range", data: [] }],
+      title: { text: "Stock Scatter Plot", align: "left" },
+      xaxis: { type: "datetime" },
+    });
+
+    candlestickChart.render();
+    lineChart.render();
+    scatterChart.render();
+
+    function fetchDataAndUpdateChart(symbol) {
+      fetch(`/candlestick?symbol=${symbol}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const candlestickData = data.candlestick.map((item) => ({
+            x: new Date(item.t).getTime(),
+            y: [item.o, item.h, item.l, item.c],
+          }));
+          const lineChartData = data.line.map((item) => ({
+            x: new Date(item.t).getTime(),
+            y: item.c,
+          }));
+          const scatterData = data.scatter.map((item) => ({
+            x: new Date(item.t).getTime(),
+            y: [item.l, item.h],
+          }));
+
+          candlestickChart.updateSeries([{ data: candlestickData }]);
+          lineChart.updateSeries([
+            { name: "Close Price", data: lineChartData },
+          ]);
+          scatterChart.updateSeries([
+            { name: "Price Range", data: scatterData },
+          ]);
+        })
+        .catch((error) => console.error("Error fetching data:", error));
+    }
+
+    document
+      .getElementById("symbolSelector")
+      .addEventListener("change", function () {
+        fetchDataAndUpdateChart(this.value);
+      });
+
+    fetchDataAndUpdateChart(document.getElementById("symbolSelector").value);
+  });
+</script>
+{% endblock %}
